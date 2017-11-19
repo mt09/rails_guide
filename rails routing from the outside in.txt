@@ -1,0 +1,139 @@
+讀完本章將會了解：
+如何詮釋在routes.rb的程式碼。
+action會接收什麼樣的參數。
+如何建構routes，使用推薦的資源式寫法或者match method。
+如何自動產生路徑與URLs透過route helpers。
+進階技巧如約束和Rack端點。
+
+1. The Purpose of the Rails Router
+
+Rails路由辨識URLS與分派至controller的action，亦可建立路徑與URLs，避免在view寫死。
+
+1.1 Connection URLs to Code
+當Rails app接收到迎來的請求如：
+[code]
+GET /patients/17
+[/code]
+會詢問router以分配到controller的action。
+
+若請求如：
+[code]
+get '/patients/:id', to: 'patients#show'
+[/code]
+請求被派送至patients controller的show並帶id: '17'的參數。
+
+1.2 Generating paths and URLs from code
+若如上的route被編輯為ㄤ
+[code]
+get '/patients/:id', to: 'patients#show', as: 'patient'
+[/code]
+而你的app在controller裡有：
+[code]
+@patient = Patient.find(17)
+[/code]
+回應的頁面：
+[code]
+<%= link_to 'Patient Record', patient_path(@patient) %>
+[/code]
+
+接著router將產生 /patients/17 的路徑。降低view的脆性並使程式易讀。id無需在router helper裡指定。
+
+
+2. Resource routing: the Rails Default
+
+資源路由可以快速地宣告資源式controller常見路徑，資源式路由單行宣告來替代index, show, new, edit, create, update and destroy的個別宣告。
+
+可以進行複數宣告：
+[code]
+resources :photos, :books, :videos
+[/code]
+
+
+有時客戶端的請求不需要ID，可以用單數resource映射action：
+[code]
+get 'profile', to: 'users#show'
+[/code]
+
+使用字串會送到controller#action，而使用symbol則是直接傳到action：
+[code]
+get 'profile', to: :show
+[/code]
+
+HTTP有著GET, POST, PATCH/PUT與DELETE的動作，有著相對的路徑與Controller#Action。
+
+
+2.6 Controller Namespaces and Routing
+
+成群controller可以在指定的controller底下組成：
+[code]
+namespace :admin do
+    resources :articles, :comments
+end
+[/code]
+
+在路徑上也會成為 /admin/articles。
+
+
+2.7 Nested Resources
+
+常見到resources有其他children resources，例如兩個model互有關連，宣告如下：
+[code]
+resources :owners do
+    resources :cats
+end
+[/code]
+
+路徑則會是：
+/owners/:owner_id/cats，依此類推。巢狀resources不應該多過一層。
+
+
+2.8 Routing concerns
+
+Routing concerns 允許宣告常用路徑可在其他resources與routes裡被重複使用。
+
+[code]
+concern :commentable do
+    resources :comments
+end
+
+concern :image_attachable do
+    resources :images, only: :index
+end
+
+#重複使用：
+resources :messages, concerns: :commentable
+resources :articles, concerns: [:commentable, :image_attachable]
+
+#上例同等：
+resources :messages do
+    resources :comments
+end
+
+resouces :articles do
+    resources :comments
+    resources :images, only: :index
+end
+[/code]
+
+Also you can use them in any place that you want inside the routes, for example in a scope or namespace call:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

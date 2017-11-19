@@ -1,0 +1,177 @@
+Active Record Basics
+
+什麼事物件關係應設與Active Record與他們如何使用
+Active Record如何融入MVC範例
+如何使用Active Record models來操作資料儲存在有關聯的資料庫
+Active Record schema命名慣例
+資料庫遷徙概念、驗證與callbacks
+
+
+1. What is Active Record?
+
+Active Record is the M in MVE - the model -which is the layer of the system responsible for representing business data and logic. Active Record facilitates the creation and use of business object whose data required persistent storage to a database. It is an implementation of the Active Record pattern which itself is a desciption of an Object Relational Mapping system.
+
+Active Record是MVC中的M - model，也就是呈現商業資料與邏輯的系統層級。Active Record促使建立並資料需不斷儲存到資料庫的商業物件使用。
+這是個Active Record模式的應用，他本身就是ORM的描述。
+
+1.1 The Active Record Pattern
+
+Active Record was descripbed by Martin Fowler in his book Patterns of Enterprise Application Architecture. In Active Record, objetcs carry both persistent data and behavior which operates on that data. Active Record takes the opinion that ensuring data access logic as part of the object will educate users of that object on how to write to and read from the database.
+
+Martin Fowler在他Patterns of Enterprice Application Architecture書裡描述過Active Record，物件帶有持久化的資料與操作資料的行爲。Active Record確保資料存取邏輯為物件的一部分，教導使用者物件該如何解入並由資料庫取出。
+
+1.2 Object Relational Mapping
+
+Objetc Relaional Mapping, commonly referred to as its abbreviation ORM, is a technique that connects the rich objects of an application to tables in a relational database management system. Using ORM, the properties and relationships of the objects in an application can be easily stored and retrieved from a database without writing SQL statements derectly and with less overall dataase access code.
+ORM為常用縮寫，是個將應用程式的眾多物件與關係資料庫管理系統的表格做連結的技術。使用ORM，物件間的屬性與關係可以輕易的存取而不需要直接地撰寫SQL，減少資料庫存取的程式碼。
+
+1.3 Active Record as an ORM framework
+
+Active Record gives as several mechanisms, the most important being the ability to:
+
+Represent models and their data.
+Represent associations between these models.
+Represent inheritance hierachies through related models.
+Validate models before they get persieted to the database.
+Perform database operations in an object-oriented fasion.
+
+Active Record提供許多機制，重要功能如：
+呈現model與他的資料
+呈現model間關係
+透過關聯model呈現繼承層級
+存入資料庫前驗證
+物件導向風格的資料庫操作
+
+
+2 Convention over Configuration in Active Record
+
+When writing application using other programming languages or frameworks, it may be necessary to write a lot of configuration code. This is particulary true for ORM frameworks in general. However, if you follow the conventions adopted by Rails, you'll need to write very little configuration (in some cases no configuration at all) when creating Active Record models. The idea is that if you configure your applications in the very same way most of the time then this should be the default way. Thus, explicit configuration would be needed only in those cases where you can's follow the standatd convention.
+使用其它編程語言或框架撰寫應用程式時，可能必須寫下許多設定的程式，對於一般的ORM框架的確如此，若遵照Rails的慣例，只需要寫少少的設定(某部分完全沒有設置)在建立Active Record models。這個發想來自大多時候設置應用程式用了非常相似的方法，應該將他變成預先設定。如此，明確的設置時機只在你無法使用標準慣例時候。
+
+2.1 Naming Conventions
+
+By default, Active Record uses some naming conventions to find out how the mapping between models and database tables should be created. Rails will pluralize your class names to find the respective database table. So, for a class Book, you should have a database table called books. The Rails pluralization mechanisms are very powerful, being capable of pluralizing (and singularizing) both regular and irregular words. When using class names composed of two or more words, the model class name should follow the Ruby conventions, using the CamelCase form, while the table name must contain the words sparated by underscores. Examples:
+
+Datebase Table - Plural with underscores separating words (e.g, book_clubs).
+Model Class - Singular with the first letter of each word capitalized (e.g. BookClub).
+
+預設Active Record使用命名慣例處理model間的映射，資料庫表格的建立。Rails使用複數的class name找到個別的資料庫表格。class Book，對應的資料庫表格稱作books。Rails複數理論很強大，對於符合或否的單詞都有單數或複數化的能力。使用兩個以上單詞組成的class name，應該遵守Ruby慣例，使用駝峰式，當表格名稱包含區分用的底線時：
+
+Database Table - 底線區隔的複數詞(book_blubs)。
+Model Class - 每個開頭字母大寫的單數詞(BookClub)。
+
+2.2 Schema Conventions
+
+Active Record uses naming conventions for the columns in database tables, depending on the purpose of these columns.
+
+  Foreign keys - These fields should be named following the pattern
+  singularized_table_name_id(e.g. itme_id, order_id). These are the fields that Active Record will look for when you create associations between your models.
+  Primary keys - By defualt, Active Record will use an integer column named id as the table's primary key. When using Active Record Migrations to create your tables, this column will be automatically created.
+
+Active Record在資料庫表格的欄位所用的命名慣例，取決於以下欄位。
+
+  Foreign keys - 這類應該依照其形式命名，單數表格名稱_id(item_id, order_id)。建立model間關聯時Active Record會找這類的欄位。
+  Primary keys - 預設為Active Record使用integer命名作表格的primary key。當進行Active Record遷徙來產生表格，這欄會自動生成。
+
+There are also some optional column names that will add addtitional features to Active Record instances:
+  
+  created_at - Automatically gets set to the current date and time when the record is first created.
+  updated_at - Automatically gets set to the current date and time whenever the record is updated.
+  lock_version - Adds optimistic locking to a model.
+  type - Specifies that the model uses Single Table Inheritance.
+  (association_name)_type - Stores the type for polymorphic associations.
+  (table_name)_count - Used to cache the number of belonging objects on associations.
+  For example, a comments_count column in an Article class that has many instances of Comment will cache the number of existent comments for each article.
+
+有些非必需的欄位名稱會加入額外的屬性到Active Record實例：
+
+  craeted_at - 自動取得即時日期與時間在record最初建立時。
+  updated_at - 自動取得即時日期在任何record被更新時候。
+  lock_version - 將optimistic locing加到model。
+  type - 指定model使用Single Table Inheritance。
+  (association_name)_type - 將多形關聯儲存。
+  (table_name)_count - 用於快取關聯物件的數量。Article class的comments_count欄位有許多Comment的實例以夠快取每個article的現有comments數量。
+
+note: 
+While these column names are optional, they are in fact reserved by Active Record. Steer clear of reserved keywords unless you want the extra funtionality. For example, type is a reserved keyword userd to designate a table using Single Table Inheritance (STI). If you are not using STI, try an analogous keywod like "context", that may still accurately describe the data you are modeling.
+
+這些欄位是選擇性的，事實上他們是Active Record的保留字。除非有額外的功能，建議保留這些關鍵字。例如type是個保留字，指定一表格用作Single Table Inheritance。若要使用STI，試試看類似的關鍵字像是"context"，仍可以精準地描述你正建造model的資料。
+
+
+3 Creating Active Record Models
+
+It is very easy to create Active Record models. All you have to do is to subclass the ApplicationRecord class and you're good to go:
+
+建立Active Record models是相當容易的。你必須做的是加入子類別到ApplicationRecord class：
+
+[code]
+class Product < ApplicationRecord
+end
+[/code]
+
+This will create a Product model, mapped to a products table at the database. By doing this you'll also have the ability to map the columns of each row in that attributes of the instances of your model. Suppose that the products table was created using an SQL statement like:
+
+[code]
+CREATE TABLE products (
+  id int(11) NOT NULL auto_increment,
+  name varchar(255),
+  PRIMARY KEY (id)
+);
+[/code]
+
+Following the table schema above, you would be able to write code like the following:
+
+[code]
+p = Product.new
+p.name = "Some Book"
+puts p.name # "Some Book"
+[/code]
+
+
+4 Overriding the Nameing Conventions
+
+What if you need to follow a different naming convention or need to use your Rails application with a legacy database? No problem, you can easily override the default conventions.
+
+若要依照不同命名慣例獲釋需要使用帶著舊有資料庫的Rails app? 沒問題，很輕易地覆寫這預設慣例。
+
+ApplicationRecord inherits from ActiveRecord::Base, which defines a number of helpful methods. You can use the ActiveRecord::Base.table_name = method to specify the table name that sould be used:
+
+ApplicationRecord繼承自ActiveRecord::Base，定義了許多有用的方法。可以用ActiveRecord::BAse.table_name = method來指定table name:
+
+[code]
+class Product < ApplicationRecord
+    self.table_name = "my_products"
+end
+[/code]
+
+If you do so, you will have to define manually the class name that is hosting the fixtures (my products.yml) using the set_fixture_class method in your test definition:
+
+若你指定了table name，必須手動地定義class name，f
+
+[code]
+class ProdcutTest < ActiveRecord::TestCase
+  set_fixture_class my_products: Product
+  fixtures :my_products
+end
+[/code]
+
+It's also possible to override the column that should be used as the table's primary key using the ActiveRecord::Base.primary_key = method:
+
+同樣也可以覆寫欄位，像是修改表格的primary key，使用ActiveRecord::Base.primary_key = method:
+
+[code]
+class Product < ApplicationRecord
+  self.primary_key = "product_id"
+end
+[/code]
+
+
+
+
+
+
+
+
+
+
+

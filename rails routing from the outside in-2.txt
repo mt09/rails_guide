@@ -1,0 +1,179 @@
+Non-Resourceful Route
+
+除了資源式路由，Rails在任意URL對應到行為的支援相當強而有力，於此，沒有隨著資源式路由自動生成的路徑，取而代之是各自設立每一個路徑。
+
+3.1 Bound Parameters
+
+以symbol設定一般路由後，Rails會映射到迎來的HTTP請求。
+1. :controller 會映射到app裡的controller
+2. :action 則映射到帶有該行為的controller
+如下：
+[code]
+get ':controller(/:action(/:id))'
+[/code]
+
+如 /photos/show/1 即來的請求透過此路由處理，結果會交給 PhotosController的show action，並將params[:id]設為1，也會由PhotosController#index處理/photos的請求。
+    
+    
+3.2 Dynamic Segments
+
+可以在一般路由設定多個動態片段，只要不是 :controller 或 :action 則會成為params的一部分：
+
+[code]
+get ':controller/:action/:id/:user_id'
+[/code]
+
+指向 /photos/show/1/2 的路徑會被派發到PhotosController的show action，params[:id] 為1，params[:user_id]則為2。
+
+notice:
+不能使用 :namespace 或 :module，若需要在:controller使用約束，以符合namespace：
+
+[code]
+get ':controller(/:action(/:id))', controller: /admin\/[^\/]+\
+[/code]
+
+
+3.3 Static Segments
+
+當建立路由時不透過冒號來指定靜態片段：
+
+[code]
+get ':controller/:action/:id/with_user/:user_id'
+[/code]
+
+路由會由 /photos/show/1/with_user/2 的路徑來回應，此例的params會是 { controller: 'photos', action: 'show', id: '1', user_id: '2' }。
+
+
+3.4 The Query String
+
+param不包含任何來自query string：
+
+[code]
+get ':controller/:action/:id'
+[/code]
+
+/photos/show/1?user_id=2 會被分派到 photos controller 的 show action，params則是{ controller: 'photos', action: 'show', id: '1', user_id: "2" }。
+
+
+3.5 Defining Defaults
+
+在路由中不需明確地使用 :controller and :action symbols，可以提供預設：
+
+[code]
+get 'photos/:id', to: 'photos#show'
+[/code]
+
+此路由在Rails會符合 /photos/12 到 PhotosController 的 show action。
+你也能定義其他預設，藉由提供hash來做為:default的選項。這樣不用指定動態片段也行：
+
+[code]
+get 'photos/:id', to: 'photos#show', defaults: ( format: "jpg" )
+[/code]
+
+Rails會將 photos/12 配合到PhotosController 的 show aciton，並設定params[:format]為"jpg"。
+
+
+3.6 Naming Routes
+
+可以在任何使用:as選項的路由來指定名稱
+
+[code]
+    get 'exit', to: "sessions#destroy", as: :logout
+[/code]
+
+這會產生 logout_path 與 logout_url 如在app命名helper一般，呼叫logout_path將會回傳/exit。
+也可由resources來覆寫路由方法：
+
+[code]
+get ':username', to: 'user#show', as: :user
+[/code]
+
+在controller，helper和view裡可以使用user_path方法，路徑會像是 /bob。
+裡頭的show action，params[:username]會含括username，若你不想要 :username也可以去做變更。
+
+
+3.7 HTTP Verb Constraints
+
+In general, you should use the get, post, put, patch and delete methods to constrain a route to a particular verb. You can use the match method with the :via option to match multiple verbs at once:
+通常你用get, post, put, patch 和 delete方法以限制路徑到http動詞，可以用:via做為相配的方法來搭配複數詞並一次搞定。
+[code]
+match 'photos', to: 'photos#show', via: [:get, :post]
+[/code]
+
+搭配所有路徑即使用 via: :all
+[code]
+match 'photos', to: 'photos#show', via: :all
+[/code]
+
+notice：
+'GET'在Rails中不會進行CSRF token確認，應該避免用'GET'進行寫入database。
+
+
+3.8 Segment Constraints
+
+可以用 :constraints 選項強行設設計動態片段：
+[code]
+get 'photos/:id', to: 'photos#show', constraints: { id: [A-Z]\d{5}/  }
+[/code]
+
+這路由與photos/A12345相符，可以用簡潔的方式如下：
+[code]
+    get 'photos/:id', to: 'photos#show', id: /[A-Z]\d{5}/
+[/code]
+
+:constraints 吃正規表示式但錨點無法被使用，下列是不會起作用的：
+[code]
+    get '/:id', to: 'articles#show', constraints: { id: /^\d/ }
+[/code]
+
+總之，不需要錨點，因為全路由都自錨點開始。
+
+
+3.9 Request-Based Constraints
+
+透過約束路由在任何請求物件之上回傳string。
+
+
+3.12 Redirection
+
+透過redirect helper來轉導位置：
+[code]
+    get '/stories', to: redirect('/articles')
+[/code]
+
+也能重複使用動態片段
+[code]
+    get '/stories/:name', to: redirect('/articles/%{name}')
+[/code]
+
+
+3.14 Using root
+
+使用root方法指定Rails路由到"/"：
+[code]
+    root to: 'home#index'
+    root 'home#index'
+[/code]
+
+notice:
+root路由是GET請求限定。
+
+
+3.15 Unicode character routes
+使用unicode字元：
+[code]
+    get 'こんにちは', to: 'welcome#index'
+[/code]
+
+
+
+
+
+
+
+
+
+
+
+
+

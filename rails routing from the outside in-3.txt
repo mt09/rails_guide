@@ -1,0 +1,87 @@
+4. Customizing Resourceful Routes
+
+當resources :article建立預設路由與helper時可以運作得很好，你也許會想用相同方式刻出路由，Rails能給你完全地客制資源式helper的任何部分。
+
+4.1 Specifying a Controller to Use
+
+:controller選項可以明確指定針對resource來使用：
+[code]
+resources :photos, controller: 'images'
+[/code]
+
+路徑依然是/photos、/photos/xxx，行為則由images controller處理。
+
+對namespace controller而言，可以使用目錄表示法：
+[code]
+resources :user_permissions, controller: 'admin/user_permissions'
+[/code]
+
+這將會依照路由連結到Admin::UserPermissions controller。
+
+notice:
+唯有目錄表示支援時，指定由Ruby常數表示法來指定controller(例如controller: 'Admin::UserPermissions')會引發路由問題和引起警告。
+
+
+4.2 Sprcifying Constraints
+
+可以使用:constraints選項來指定id：
+[code]
+resources :photos, constraints: { id: /[A-Z] [A-Z] [0-9]+/ }
+[/code]
+
+這項宣告限制參數:id來符合所提供的正規表示式，如此，路由不再符合/photos/1，取代的是/photos/RR27。
+
+可以指定單項限制給複數路由使用透過區塊格式：
+[code]
+constraints(id: /[A-Z] [A-Z] [0-9]+/) do
+    resources :photos
+    resources :accounts
+end
+[/code]
+
+notice:
+當然可以使用更進階的限制在非資源式路由。
+
+
+4.3 Overriding the Named Helpers
+
+:as選項可以覆寫已命名的路由helper
+[code]
+resources :photos, as: "images"
+[/code]
+
+will recognize incoming paths beginning with /photos and route the requests to PhotosController, but use the value of the :as option to name the helpers.
+
+
+4.4 Overriding the new and edit Segments
+
+:path_name 選項可以覆寫自動生成的new與edit片段：
+[code]
+resources :photos, path_names: { new: 'make', edit: 'change' }
+[/code]
+
+這會使路由將路徑辨識如：
+[code]
+/photos/make
+/photos/1/change
+[/code]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
