@@ -211,6 +211,93 @@ Using the new method, an object can be instantiated without being saved:
 user = User.new
 user.name = "David"
 user.occupation = "Code Artist"
+[/code]
+
+A call to user.save will commit the record to the database.
+
+user.save會提交記錄到資料庫。
+
+[code]
+user = User.new do |u|
+  u.name = "Davie"
+  u.occupation = "code Artist"
+end
+[/code]
+
+
+5.2 Read
+
+Active Record provides a rich API for accessing data within a database. Below are a few examples of different data access methods provide by Active Record.
+
+Active Record提供豐富的API在資料庫進行存取。以下為不同資料存取方法：
+
+[code]
+# return a collection with all users
+# 回傳所有使用者的集合
+users = User.all
+[/code]
+
+[code]
+# return the first user
+回傳user第一筆資料
+user = User.first
+[/code]
+
+[code]
+# return the first user named David
+回傳名為David的user
+david = USer.find_by(name: 'David')
+[/code]
+
+[code]
+# find all users named David who are Code Artists and sort by created_at in reverse chronological order 
+在所有user中找到職業為Code Artist、名為David的user，並按照建立時間降冪排列
+users = User.where(name: 'David', occupation: 'Code Artist').order(created_at: :desc)
+[/code]
+
+
+5.3 Update
+
+Once an Active Record object has been retrieved, its attributes can be modified and it can be saved to the database.
+
+一但物件被取回，他的屬性可以被修改並存入資料庫。
+
+[code]
+user = User.find_by(name: 'David')
+user.name = "Dave"
+user.save
+[/code]
+
+A shorthand for this is to use a hash mapping attribute names to the desired value, like so:
+
+使用hash對應name屬性到期望值，簡化的方式：
+
+[code]
+user = User.find_by(name: 'David')
+user.update(name: 'Dave')
+[/code]
+
+This is most useful when updating several attributes at once. If, on the other hand, you'd like to update sevearl records in bulk, you may find the update_all class method useful: 
+
+最實用的一次更新多項屬性。若要一次大量的更新多筆記錄，使用update_all class method：
+
+[code]
+User.update_all 'max_login_attempts = 3, must_change_password = "ture" '
+[/code]
+
+
+5.4 Delete
+
+Likewise, once retrieved an Active Record object can be destroyed which removes it from the database.
+
+此外，物件可以自資料庫移除。
+
+[code]
+user = User.find_by(name: "David")
+user.destroy
+[/code]
+
+
 
 6 Validations
 
@@ -220,14 +307,36 @@ There are several methods that you can use to check your models and validate tha
 Active Record可以驗證model在被寫入資料庫之前。
 有著序多方法用來檢查model與驗證屬性的值不為空，是唯一的，尚未在資料庫裡，依照指定格式等等。
 
+Validation is a very important issues to consider when persisting to the database, so the methods save and update take it into account when running: they return false when validation fails and they didn't actually perform any opration on the database. All of these have a bang counterpart (that is, save! and update!), which are stricter in that they raise the exception.
+
+資料存入資料庫時驗證是相當重要的議題，考慮到save與update方法，驗證失敗以及無法操作資料庫時會回傳false。save!與update!則基於更嚴的驗證而會會提出例外。
+
+ActiveRecord::RecordInvalid if validation fails. A qick example to illustrate:
+
+[code]
+class User < ApplicationRecord
+  validates :name, presence: true
+end
+
+user = User.new
+user.save  # => false
+user.save! # => ActiveRecord::RecordInvalid:
+Validation failed: Name can't be blank
+[/code]
+
+
+
+7. Callbacks
+
+Active Record callbacks allow you to attach code to certain events in the life-cycle of your models. This enables you to add behavior to your models by transparently executing code when those events occur, like when you create a new record, update it, destroy it and so on. 
+
+Active Record callbacks可以附加程式碼在
 
 
 
 
+8 Migrations
 
-
-
-
-
+Rails provides a domain-specific language for managing a database schema called migrations. Migrations are stored in files which are executed against any database that Active Record supports using rake. Here's a migration thet creates a table:
 
 
