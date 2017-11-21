@@ -18,4 +18,23 @@ Migrations are a convenient way to alter your database schema over time in a con
 
 You can think of each migration as being a new 'version' of the database. A schema starts off with nothing in it, and each migration modifies it to add or remove tables, columns, or entries. Active Record knows how to update your schema along this timeline, bringing it from whatever point it is in the history to the latest version. Active Record will also update your db/schema.rb file to match the up-to-date structure of your database.
 
-想像每個遷移都是一個新版本的資料庫。一張圖表始於虛無，每個遷移做出增減表格、欄位或是項目的改變。Active Record知道如何沿著時間更新你的表格，由始至今。Active Record也會更新db/schema.rb以符合最新的資料庫結構。
+想像每個遷移都是一個新版本的資料庫。一張圖表始於虛無，每個遷移做出增減表格、欄位或是項目的改變。Active Record知道如何沿著時間更新你的表格，由始至今。Active Record也會更新db/schema.rb以符合最新的資料庫結構。Active Record也能更新db/schema.rb以搭配最新的資料庫結構。
+
+[code]
+class CreateProducts < ActiveRecord::Migration[5.0]
+  def change
+    create_table :products do |t|
+      t.string :name
+      t.text :description
+
+      t.timestamps
+    end
+  end
+end
+[/code]
+
+This migration adds a table called products with a string column called name and a text column called description. A primary key column called id will also be added implicitly, as it's the default primary key for all Active Recerd models. the timestamps macro adds two columns, created_at and updated_at. These special columns are automatically managed by Active Record if they exist.
+
+遷移加入products的表格，一個name的字串欄位，一個description的text欄位。悄悄加入的primary key為id，所有Active Record model姐如此，timestamps產生created_at與updated_at。這些特殊欄位是Active Record自動提供。
+
+
