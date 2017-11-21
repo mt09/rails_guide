@@ -7,6 +7,7 @@ Active Record schema命名慣例
 資料庫遷徙概念、驗證與callbacks
 
 
+
 1. What is Active Record?
 
 Active Record is the M in MVE - the model -which is the layer of the system responsible for representing business data and logic. Active Record facilitates the creation and use of business object whose data required persistent storage to a database. It is an implementation of the Active Record pattern which itself is a desciption of an Object Relational Mapping system.
@@ -14,16 +15,19 @@ Active Record is the M in MVE - the model -which is the layer of the system resp
 Active Record是MVC中的M - model，也就是呈現商業資料與邏輯的系統層級。Active Record促使建立並資料需不斷儲存到資料庫的商業物件使用。
 這是個Active Record模式的應用，他本身就是ORM的描述。
 
+
 1.1 The Active Record Pattern
 
 Active Record was descripbed by Martin Fowler in his book Patterns of Enterprise Application Architecture. In Active Record, objetcs carry both persistent data and behavior which operates on that data. Active Record takes the opinion that ensuring data access logic as part of the object will educate users of that object on how to write to and read from the database.
 
 Martin Fowler在他Patterns of Enterprice Application Architecture書裡描述過Active Record，物件帶有持久化的資料與操作資料的行爲。Active Record確保資料存取邏輯為物件的一部分，教導使用者物件該如何解入並由資料庫取出。
 
+
 1.2 Object Relational Mapping
 
 Objetc Relaional Mapping, commonly referred to as its abbreviation ORM, is a technique that connects the rich objects of an application to tables in a relational database management system. Using ORM, the properties and relationships of the objects in an application can be easily stored and retrieved from a database without writing SQL statements derectly and with less overall dataase access code.
 ORM為常用縮寫，是個將應用程式的眾多物件與關係資料庫管理系統的表格做連結的技術。使用ORM，物件間的屬性與關係可以輕易的存取而不需要直接地撰寫SQL，減少資料庫存取的程式碼。
+
 
 1.3 Active Record as an ORM framework
 
@@ -43,10 +47,12 @@ Active Record提供許多機制，重要功能如：
 物件導向風格的資料庫操作
 
 
+
 2 Convention over Configuration in Active Record
 
 When writing application using other programming languages or frameworks, it may be necessary to write a lot of configuration code. This is particulary true for ORM frameworks in general. However, if you follow the conventions adopted by Rails, you'll need to write very little configuration (in some cases no configuration at all) when creating Active Record models. The idea is that if you configure your applications in the very same way most of the time then this should be the default way. Thus, explicit configuration would be needed only in those cases where you can's follow the standatd convention.
 使用其它編程語言或框架撰寫應用程式時，可能必須寫下許多設定的程式，對於一般的ORM框架的確如此，若遵照Rails的慣例，只需要寫少少的設定(某部分完全沒有設置)在建立Active Record models。這個發想來自大多時候設置應用程式用了非常相似的方法，應該將他變成預先設定。如此，明確的設置時機只在你無法使用標準慣例時候。
+
 
 2.1 Naming Conventions
 
@@ -59,6 +65,7 @@ Model Class - Singular with the first letter of each word capitalized (e.g. Book
 
 Database Table - 底線區隔的複數詞(book_blubs)。
 Model Class - 每個開頭字母大寫的單數詞(BookClub)。
+
 
 2.2 Schema Conventions
 
@@ -98,6 +105,7 @@ While these column names are optional, they are in fact reserved by Active Recor
 這些欄位是選擇性的，事實上他們是Active Record的保留字。除非有額外的功能，建議保留這些關鍵字。例如type是個保留字，指定一表格用作Single Table Inheritance。若要使用STI，試試看類似的關鍵字像是"context"，仍可以精準地描述你正建造model的資料。
 
 
+
 3 Creating Active Record Models
 
 It is very easy to create Active Record models. All you have to do is to subclass the ApplicationRecord class and you're good to go:
@@ -111,6 +119,8 @@ end
 
 This will create a Product model, mapped to a products table at the database. By doing this you'll also have the ability to map the columns of each row in that attributes of the instances of your model. Suppose that the products table was created using an SQL statement like:
 
+這將建立Product model映射到資料庫的products表格。如此可以映射到model實體屬性在每列的欄位。若說products表格使用SQL語法建立：
+
 [code]
 CREATE TABLE products (
   id int(11) NOT NULL auto_increment,
@@ -121,11 +131,14 @@ CREATE TABLE products (
 
 Following the table schema above, you would be able to write code like the following:
 
+依照如上的表格圖表，可以寫出程式碼：
+
 [code]
 p = Product.new
 p.name = "Some Book"
 puts p.name # "Some Book"
 [/code]
+
 
 
 4 Overriding the Nameing Conventions
@@ -164,6 +177,45 @@ class Product < ApplicationRecord
   self.primary_key = "product_id"
 end
 [/code]
+
+
+
+5 CRUD: Reading and writing Data
+
+CRUD is an acronym for the four verbs we use to oprate on data: Create, Read, Update and Delete. 
+Active Record automatically create methods to allow an application to read and manipulate data stored within its tables.
+
+CRUD是四個操作資料的動詞：Create, Read, Update and Delete。
+Active Record 自動生成方法讓應用程式以自己的表格來讀取與操作資料存入。
+
+
+5.1 Create
+
+Active Record objects can be created from a hash, a block or have their attributes manually set after creation. The new method will return a new object while create will return the object and save it to the database.
+
+Active Record物件可以由hash產生，
+
+For example, given a model User with attributes of name and occupation, the create method call will create and save a new record into database:
+
+[code]
+user = User.create(name: "David", occupation: "Code Artist")
+[/code]
+
+Using the new method, an object can be instantiated without being saved:
+
+[code]
+user = User.new
+user.name = "David"
+user.occupation = "Code Artist"
+
+6 Validations
+
+Active Record allows you to validate the state of a model before it gets written into the database.
+There are several methods that you can use to check your models and validate that an attribute value is not empty, is unique and not already in the database, follows a specific format and many more.
+
+Active Record可以驗證model在被寫入資料庫之前。
+有著序多方法用來檢查model與驗證屬性的值不為空，是唯一的，尚未在資料庫裡，依照指定格式等等。
+
 
 
 
