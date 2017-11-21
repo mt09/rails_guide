@@ -330,13 +330,46 @@ Validation failed: Name can't be blank
 
 Active Record callbacks allow you to attach code to certain events in the life-cycle of your models. This enables you to add behavior to your models by transparently executing code when those events occur, like when you create a new record, update it, destroy it and so on. 
 
-Active Record callbacks可以附加程式碼在
-
+Active Record callbacks可以附加程式碼在model的週期裡。觸發事件時透過程式的執行可以新增行為到model，好比你新增一筆記錄，更新它、刪除它之類。
 
 
 
 8 Migrations
 
 Rails provides a domain-specific language for managing a database schema called migrations. Migrations are stored in files which are executed against any database that Active Record supports using rake. Here's a migration thet creates a table:
+
+Rails為管理資料庫圖表提供特定領域語言，稱為遷移。遷移被存在檔案裡，可被任何Active Record支援的資料庫透過rake執行，如下：
+
+[code]
+class CreatePublications < ActiveRecord::Migration[5.0]
+  def change
+    create_table :publications do |t|
+      t.string :title
+      t.text :description
+
+      t.timestamps
+    end
+    
+    add_index :publications, :publication_type_id
+  end
+end
+[/code]
+
+Rails keeps track of which files have been committed to the database and provides rollback features. To actually create the tables, you'd run rails db:migrate and to roll it back, rails db:rollback.
+
+Rails持續追蹤被提交到資料庫的檔案，並提供rollback功能。執行rails db:nmigrate建立表格，rails db:rollback用來返回上一步。
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
