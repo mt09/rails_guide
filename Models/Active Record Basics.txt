@@ -159,7 +159,7 @@ end
 
 If you do so, you will have to define manually the class name that is hosting the fixtures (my products.yml) using the set_fixture_class method in your test definition:
 
-若你指定了table name，必須手動地定義class name，f
+若你指定了table name，在測試中需要使用set_fixture_class來手動地定義class name：
 
 [code]
 class ProdcutTest < ActiveRecord::TestCase
@@ -193,15 +193,19 @@ Active Record 自動生成方法讓應用程式以自己的表格來讀取與操
 
 Active Record objects can be created from a hash, a block or have their attributes manually set after creation. The new method will return a new object while create will return the object and save it to the database.
 
-Active Record物件可以由hash產生，
+Active Record物件可以由hash、區塊，或是產生以後手動設置。new方法會傳回新物件，create會傳回物件並儲存到資料庫。
 
 For example, given a model User with attributes of name and occupation, the create method call will create and save a new record into database:
+
+給model User兩個屬性，name與occupation，create方法會進行建立與儲存一筆新記錄到資料庫裡：
 
 [code]
 user = User.create(name: "David", occupation: "Code Artist")
 [/code]
 
 Using the new method, an object can be instantiated without being saved:
+
+使用new方法，物件會成為示例而不會被儲存：
 
 [code]
 user = User.new
