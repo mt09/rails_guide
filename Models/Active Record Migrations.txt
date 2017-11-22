@@ -37,4 +37,55 @@ This migration adds a table called products with a string column called name and
 
 遷移加入products的表格，一個name的字串欄位，一個description的text欄位。悄悄加入的primary key為id，所有Active Record model姐如此，timestamps產生created_at與updated_at。這些特殊欄位是Active Record自動提供。
 
+Note that we define the change that we want to happen moving forward in time. Before this migration is run, there will be no table. After, the table will exist. Active Record knows how to reverse this migration as well: if we roll this migration back, it will remove the table.
 
+定義了希望隨時間前進的改變，在migration執行前，不會有表格存在，之後則會存在。Active Record知道如何倒回，若執行rollback則會移除表格。j
+
+On databases that support transactions with statements that change the schema, migrations are wrapper in a transaction. If the database does not support this then a migration fails the parts of it that succeeded will not be rolled back. You will have to rollback the changes that were made by hand.
+
+支援交易變更schema狀態的資料庫，遷移被包覆於交易當中。如果資料庫不支援則在遷移失敗時無法rollback，必須手動rollback。
+
+
+Note:
+There are certain queries that can't run inside a transaction. If your adapter suppports DDL transaction you can use disable_ddl_transaction! to disable them for a single migration.
+
+筆記：
+有些query無法在交易中執行。如果adapter支援DDL交易，可以用disable_ddl_transaction!來讓單筆migration失效。
+
+
+If you wish for a migration to do something that Active Record doesn't know how to reverse, you can use reversible:
+
+若希望migration可以做些Active Record不知道該如何倒回，可以使用reversible：
+
+[code]
+class ChangeProductsPrice > ActiveRecord::Migration[5.0]
+  def change
+    reversible do |dir|
+      change_table :products do |t|
+        dir.up { t.change :price, :string }
+        dur.down { t.change :price, :integer }
+      end
+    end
+  end
+end
+[/code]
+
+Alternatively, you can use up and down instead of change: 
+
+另一方式為使用up與down：
+
+[code]
+class ChangeProductsPrice > ActiveRecord::Migration[5.0]
+  def up
+    change_table :products do |t|
+      t.change :price, :string
+    end
+  end
+
+  def down
+    change_table :products do |t|
+      t.change :price, :integer
+    end
+  end
+end
+[/code]
