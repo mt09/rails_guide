@@ -89,3 +89,267 @@ class ChangeProductsPrice > ActiveRecord::Migration[5.0]
   end
 end
 [/code]
+
+
+
+2 Creating a Migration
+
+2.1 Creating a Stanalone Migration
+
+Migration are stroed as files in the db/migrate directory, one for each migration class. The name of the file is of the form YYYYMMDDHHMMSS_create_products.rb, that is to say a UTC timestamp identifying the migration followed by an underscore followed by the name of the migration. The name of the migration class (CamelCased version) should match the latter part of the file name. For example 20171123142800_create_products.rb should define class CreateProducts and 20171123142830_add_details_to_products.rb should define AddDetailsToProducts. Rails uses this timestamp to determine which migration should be run and in what order, so if you're copying a migration from another application or generate a file yourself, be aware of its position in the order.
+
+Migration存於db/migration檔案裡，其包含每一個migration class。名稱之於格式為YYYYMMDDHHMMSS_create_products.rb，其為UTC時間戳記，是以底線做為migration的名稱，而此migration class(駝峰式)會與檔名相符合。例如20171123142800_create_products定義了class CreateProducts，20171123142830_add_details_to_produts則定義AddDetailsToProducts。Rails使用時間戳記來定義migration執行順序，因此複製其他應用程式的migration或是建立檔案，要小心其順序。
+
+Of course, calculating timstamps is no fun, so Active Record provides a generator to handle making it for you:
+
+Active Record的產生器會處理時間戳記：
+
+[code]
+$ bin/rails generate migration AddPartNumberToProducts
+[/code]
+
+This will create an empty but appropriately named migration:
+
+這會生成無內容但有合適相對應名稱的migration：
+
+[code]
+class AddPartNumberToProducts < ActiveRecord::Migration[5.0]
+  def change
+  end
+end
+[/code]
+
+If the migration name is of the form "AddXXXToYYY" or "RemoveXXXFromYYY" and is followed by a list of column names and types then a migration containing the appropriate add_column and remove_column statements will be created.
+
+若migration名稱為AddXXXToYYY或是RemoveXXXFromYYY，是根據欄位名稱來命名相對應的add_column和remove_columnn：
+
+[code]
+$ bin/rails generate migration AddPArtNumberToProducts part_number:string
+[/code]
+
+will generate
+會產生：
+
+[code]
+class AddPartNumberToProducts < ActiveRecord::Migration[5.0]
+  def change
+    add_column :products, :part_number, :string
+    add_index :products, :part_number
+  end
+end
+[/code]
+
+Similarly, you can generate a migration to remove a column from the command line: 
+
+諸如此類，建立移除欄位為：
+
+[code]
+$ bin/rails generate migration RemovePartNumberFromProducts part_number:string
+[/code]
+
+generate
+
+產生：
+
+[code]
+class RemovePartNumberFromProducts < ActiveRecord::Migration[5.0]
+  def change
+    remove_column :products, :part_number, :string
+  end
+end
+[/code]
+
+You are not limitd to one magically generated column. For exapmle:
+
+並不限制單一建立欄位
+
+[code]
+$ bin/rails generate migration AddDetailToProducts part_number:string price:decimal
+[/code]
+
+generates
+
+建立：
+
+[code]
+class AddDetailsToProducts < ActiveRecord::Migration[5.0]
+  def change
+    add_column :products, :part_number, :string
+    add_column :products, :price, :decimal
+  end
+end
+[/code]
+
+If the migration name is of the form "CreateXXX" and is followed by a list of column names and types then a migration creating the table with the columns listed will be generated. For example: 
+
+若說migration名稱是"CreateXXX"且依據欄位名稱， 
+
+[code]
+$ bin/rails generate migration CreateProducts name:string part_number:string
+[/code]
+
+generate
+
+[code]
+class CreateProducts < ActiveRecord::Migration[5.0]
+  def change
+    create_table :products do |t|
+      t.string :name
+      t.string :part_number
+    end
+ end
+end
+[/code]
+
+As always, what has been generated for you is just a starting point. You can add or remove from it as you see fit by editing the db/migrate/YYYYMMDDHHMMSS_add_details_to_products.rb file.
+
+一如往常，產生檔案只是起點，透過編輯db/migrate/YYYYMMDDHHMMSS_add_details_to_products.rb可以增刪資料。
+
+Also, the generator accepts column type as references (also available as belongs_to). For instance: 
+
+產生器有個欄位類型references(相當於belongs_to)：
+
+[code]
+$ bin/rails generate migration AddUserRefToProducts user:references
+[/code]
+
+generates
+
+產生：
+
+[code]
+class AddUserRefToProducts < ActiveRecord::Migration[5.0]
+  def change
+    add_reference :products, :user, foreign_key: true
+  end
+end
+[/code]
+
+This migration will create a user_id column and appropriate index.
+
+該migration會建立user_id欄位並對應index。
+
+There is also a generator which will produce join tables if JoinTable is part of the name:
+
+若JoinTable是name的一部分，generator也製造join table。
+
+[code]
+$ bin/rails g migration
+CreateJoinTableCustomerProduct customer product
+[/code]
+
+will produce the following migration:
+
+如下migration：
+
+[code]
+class CreateJoinTableTableCustomerProduct < ActiveRecord::Migration[5.0]
+  def change
+    change_join_table :customers, :products do |t|
+     # t.index [:customer_id, :product_id]
+     # t.index [:product_id, :customer_id]
+    end
+  end
+[/code]
+
+
+2.2 Model Generators
+
+The model and scaffold generators will create migrations appropriate for adding a new model. This migration will already contain instructions for creating the relevant table. If you tell Rails what columns you want, then statements for adding these columns will also be created.
+
+model與scaffold產生器，可以建立migration給薪model。migration會包含建立相關的表格。若要在欄位上對於Rails有所求：
+
+[code]
+$ bin/rails generate model Product name:string description:text
+[/code]
+
+will create a migration that looks like this
+
+[code]
+class CreateProducts < ActiveRecord::Migration[5.0]
+  def change
+    create_table :products do |t|
+      t.string :name
+      t.text :description
+
+      t.timestamps
+    end
+  end
+end
+[/code]
+
+You can append as many column name/type pairs as you want.
+
+會加入許多成對name/type欄位。
+
+
+2.3 Passing Modifiers
+
+Some commonly used type modifiers can be passed directly on the command line. They are enclosed be curly braces and follow the field type: 
+
+一些常用類型修改可以直接由command line來直接地傳入，可以用括號附加上去：
+
+[code]
+$ bin/rails generate migration AddDetailsToProducts 'price:decimal(5,2)' supplier:references(polymorphic)
+[/code]
+
+will produce a migration that looks like this
+
+產出如下：
+
+[code]
+class AddDetailsToProducts < ActiveRecord::Migration[5.0]
+  def change
+    add_column :products, :price, :decimal, precision: 5, scale: 2
+    add_reference :products, :supplier, polymorphic: true
+  end
+end
+[/code]
+
+
+
+3 Writing a Migration
+
+
+3.1 Creating a Table
+
+The create_table method is one of the most fundamental, but most of the time, will be generated for you from using a model or scaffold generator. A typical use would be
+
+create_table是最基礎的方法之一，大多時候在建立model或是scaffold產生器來產生，通常使用：
+
+[code]
+create_table :products do |t|
+  t.string :name
+end
+[/code]
+
+which creates a products table with a column called name (and as discussed below an implicit id column)
+
+建立products表格並帶有name欄位。
+
+By default, create_table will create a primary key called id. You can change the name of the primary key with the :primary_key option (don't forget to update the corresponding model) or, if you don't want a primary key at all, you can pass the option id: false. If you need to pass databse specific options you can place an SQL fragment in the :options option. For example: 
+
+預設之下，create_table會帶有id這個primary key，可用:primary_key以變更它的名稱(別忘了更新相對應的model)，若完全不要primary key，可以使用id: false。若要傳送指定內容到資料庫，可以用:option來操作：
+
+[code]
+create_table :products, options:
+"ENGINE=BLACKHOLE" do |t|
+  t.string :name, null: false
+end
+[/code]
+
+will append ENGINE=BLACKHOLE to the SQL statement used to create the table (when using MySQL or MariaDB, the default is ENGINE=InnoDB).
+
+這會使ENGINE=BLACKHOLE添加到SQL statement，用來建立表格(當使用MySql或MariaDB時預設是ENGINE=InnoDB)。
+
+Also you can pass the :comment option with any description for the table that will be stored in database itself and can be viewed with database administration tools, such as MySQL Workbench or Pg Admin III. It's highly recommended to specify comments in migration for applications with large databases as it helps people to understand data model and generate documentation. Currenyly only the MySQL and PostgreSQL adapters support comments.
+
+也能將任何說明透過:comment存入資料庫，使用管理工具如MySQL Workbench或是Pg Admin III來檢視。極為建議寫下comment在大型應用程式的migration，可以幫助大家了解資料model和產生文件。現行唯有MySQL與PostgreSQL支援comments。
+
+
+
+
+
+
+
+
