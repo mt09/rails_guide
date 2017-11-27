@@ -348,6 +348,147 @@ Also you can pass the :comment option with any description for the table that wi
 
 
 
+3.2 Creating a Join Table
+
+The migraton method create_join_table creates an HABTM (has and belongs to many) join table. A typical use would be:
+
+migration方法create_join_table建立一個HABTM(has and belongs to many) join table. 一般使用如下：
+
+[code] 
+create_join_table :products, :categories
+[/code]
+
+which create a categories_products table with two columns called category_id and product_id. These columns have the option :null set to false by default. This can be overridden by specifying the :column_options option:
+
+帶有category_id與product_id的categories_products table會被建立。這些欄位有著預設:null false的option。可以透過:column_options來覆寫：
+
+[code]
+create_join_table :products, :categories,
+column_options: { null: true }
+[/code]
+
+By default, the name of the join table comes from the union of the first two arguments provided to create_join_table, in alphabetical order. To customize the name of the table, provide a :table_name option:
+
+預設的join table名稱來自於頭兩個變數的集合組成create_join_table，依照字母順序排列。要自訂表格明稱，使用:table_name option:
+
+[code]
+create_join_table :products, :categories, 
+table_name: :categorization
+[/code]
+
+creates a categorization table.
+
+建立了一個categorization表格。
+
+create_join_table also accepts a block, which you can use to add indices (which are not created by default) or additional columns:
+
+creat_join_table也可使用區塊，可以用來新增目錄(非預設建立)或是加入欄位：
+
+[code]
+create_join_table :products, :categories do |t|
+  t.index :product_id
+  t.index category_id
+end
+[/code]
+
+
+
+3.3 Changing Tables 
+
+A close cousin of create_table is change_table, used for changing existing tables. It is used in a similar fashion to create_table but the object yielded to the block knows more tricks. For example:
+
+change_table用於改變現有表格，用在相近風格但物件給了區塊更多花招使用：
+
+[code]
+change_table :products do |t|
+  t.remove :description, :name
+  t.string :part_number
+  t.inex :part_number
+  t.rename :upcode, :upc_code
+end
+[/code]
+
+removes the description and name columns, creates a part_number string column and adds an index on it. Finally it renames the upccode column.
+
+移除description與name欄位，建立為string的part_number欄位並加上index，最後對upccode欄位更名。
+
+
+
+3.4 Changing columns
+
+Like the remove_column and add_column Rails provides the change_column migration method.
+
+[code]
+change_column :products, :part_number, :text
+[/code]
+
+This changes the column part_number on products table to be a :text field.
+Note that change_column command is irreversible.
+
+變更products table的part_number欄位為:text，這樣的改變是不可逆的。
+
+Besides change_column, the change_column_null and change_column_default methods are used specifically to change a not null constraint and default values of a column.
+
+除嵙change_column外，change_column_null與change_column_default方法特定用在變更非null限制與欄位預設數值。
+
+[code]
+change_column_null :products, :name, false
+change_column_default :products, :approved, from: true, to: false
+[/code]
+
+This sets :name field on products to a NOT NULL column and the default value of the :approved field from true to false.
+
+:name設定為NOT NULL並將:approved由true變更為false。
+
+Note: You could also write the above change_column_default migraiton as change_column_default :products, :approved, false, but unlike the previous example, this would make your migration irreversible.
+
+也可以寫成change_column_default :products, :approved, false, 但這會讓migration成為不可逆。
+
+
+
+3.5 Column Modifiers
+
+Column modifiers can be applied when creating or changing a column: 
+
+欄位修改器在建立或變更時使用：
+
+*limit Sets the maxumum size of the string/text/binary/integer field.
+
+limit，設定string/text/binary/integer的最大容量。
+
+*precision Defines the precision for the decimal fields, representing the total number of digits in the number.
+
+precision，定義十進位的精度，在number呈現所有數的位數。
+
+*scale Defines the scale for the decimal fields, representing the number of digits after the decimal point.
+
+scale，對十進位定義scale
+
+*polymorphic Adds a type column for belongs_to associations.
+
+*null Allows or disallows NULL values in the column.
+
+*default Allows to set a default value on the column. Note that if you are using a dynamic value (such as a date), the default will only be calculated the first time (i.e. on the date the migration is applied).
+
+*index Adds an index for the column.
+
+*comment Adds a comment for the column.
+
+Some adapters may support additional options.
+
+Note
+nulland default cannot be specified via command line.
+
+
+
+
+
+
+
+
+
+
+
 
 
 
