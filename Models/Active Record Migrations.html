@@ -458,26 +458,132 @@ limit，設定string/text/binary/integer的最大容量。
 
 *precision Defines the precision for the decimal fields, representing the total number of digits in the number.
 
-precision，定義十進位的精度，在number呈現所有數的位數。
+precision，定義decimal的精度，在number呈現所有數的位數。
 
 *scale Defines the scale for the decimal fields, representing the number of digits after the decimal point.
 
-scale，對十進位定義scale
+scale，對decimal定義scale小數位數。
 
 *polymorphic Adds a type column for belongs_to associations.
 
+polymoyphic，增加一type欄位到belongs_to的關聯。
+
 *null Allows or disallows NULL values in the column.
+
+null，欄位的NULL數值許可與否。
 
 *default Allows to set a default value on the column. Note that if you are using a dynamic value (such as a date), the default will only be calculated the first time (i.e. on the date the migration is applied).
 
+default，允許設定欄位的預設值，要注要弱使用動態數值(如date)，則預設會在初次被計算(像是migration進行的日期)。
+
 *index Adds an index for the column.
+
+index，增加index欄位。
 
 *comment Adds a comment for the column.
 
+comment，加入comment欄位。
+
 Some adapters may support additional options.
 
+部分資料庫支援其他選項。
+
 Note
-nulland default cannot be specified via command line.
+null and default cannot be specified via command line.
+
+筆記：
+null與預設無法在command line設定。
+
+
+
+3.6 Foreign Keys
+
+While it's not required you might want to add foreign key constraints to guarantee referential integrity.
+
+可以加入foreign key以限制保證參照的完整性。
+
+[code]
+add_foreign_key :articles, :authors
+[/codeh]
+
+This adds a new foreign key to the author_id column of the articles table. The key references the id column of the authors table. If the column names can not be derived from the table names, you can use the :column and :primary_key options.
+
+新增foreign key到articles table的author_id。該key關聯著author table的id欄位。若欄位名稱並非來自table名稱，可以用:column與:primary_key的功能。
+
+Note:
+Active Record only supports single column foreign keys. execute and structure.sql are required to use composite foreign keys.
+
+Note:
+Active Record只支援單一欄位foreign keys。使用複合外鍵需用execute與structure.sql。
+
+Removing a foreign key is easy as well:
+
+移除foreign key也是很容易：
+
+[code]
+
+# let Active Record figure out the column name 
+remove_foreign_key :accounts, :branches
+
+# remove foreign key for a specific column 
+remove_foreign_ley :accounts, column: :owner_id
+
+# remove foreign key by name
+remove_foreign_key :accounts, name: :special_fk_name
+[/code]
+
+
+
+3.7 When Helpers aren't Enough
+
+If the helpers provided by Active Record aren't enough you can use the execute method to execute arbitrary SQL:
+
+若Activ Record提供的helper不夠，可以使用execute方法來執行任何SQL：
+
+[code]
+Product.connection.execute("UPDATE products SET price = 'free' WHERE 1=1")
+[/code]
+
+更多的方法可以參照API文件
+<a href="http://api.rubyonrails.org/v5.1.4/classes/ActiveRecord/ConnectionAdapters/SchemaStatements.html">
+    ActiveRecord::ConnectionAdapters::SchemaStatements (提供change, up and down方法)
+</a>
+<a href="http://api.rubyonrails.org/v5.1.4/classes/ActiveRecord/ConnectionAdapters/TableDefinition.html">
+    ActiveRecord::ConnectionAdapters::TableDefinition (由create_table產生物件的相關方法)
+</a>
+<a href="http://api.rubyonrails.org/v5.1.4/classes/ActiveRecord/ConnectionAdapters/Table.html">
+    ActiveRecord::ConnectionAdapters::Table(由change_table產生物件的相關方法)
+</a>
+
+
+
+3.8 Using the change Method
+
+The change method is the primary way of writing migrations. It works for the majority of cases, where Active Record knows how to reverse the migration automatically. Currently, the change method supports only these migration definitions: 
+
+change method為migration的主要方式。
+
+add_column
+add_foreign_key
+add_index
+add_refernce
+add_timestamps
+change_column_default(must supply a :from and :to option)
+change_column_null
+create_join_table
+create_table
+disable_extension
+drop_join_table
+drop_table(must supply a block)
+enable_extension
+remove_column(must supply a type)
+remove_foreign_key(must uspply a second table)
+remove_index
+remove_reference
+remove_timestamps
+rename_column
+rename_index
+rename_table
 
 
 
@@ -486,11 +592,11 @@ nulland default cannot be specified via command line.
 
 
 
+7 Active Record and Referential Integrity
 
+The Active Record way claims that intelligence belongs in your models, not in the database. As such, features such as triggers or constraints, which push some of that intelligence back into the database, are not heavily used.
 
+Active Record非常要求在model的理解能力，而不是在資料庫。因此，如觸發或是限制，在資料庫的運算不常使用。
 
-
-
-
-
-
+referential 指示的 做為參考的
+integrity 完整
