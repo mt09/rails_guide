@@ -561,7 +561,7 @@ Product.connection.execute("UPDATE products SET price = 'free' WHERE 1=1")
 
 The change method is the primary way of writing migrations. It works for the majority of cases, where Active Record knows how to reverse the migration automatically. Currently, the change method supports only these migration definitions: 
 
-change method為migration的主要方式。
+change method為migration的主要方式。多數Active Record知道如何自動反操作migration，以下是change method支援的列表：
 
 add_column
 add_foreign_key
@@ -585,6 +585,298 @@ rename_column
 rename_index
 rename_table
 
+change_table is also reversible, as long as the block does not call change, change_default or remove.
+
+change_table同樣是可逆的，只要區塊不呼叫change、change_default或是remove。
+
+remove_column is reversible if you supply the column type as the third argument. Provide the original column options too, otherwise Rails can't recreate the column exactly when rolling back: 
+
+若提供了第三項變數提供了欄位類型，則remove_column是可逆的。其他原有欄位也需要寫入，否則Rails無法在rollback時重建。
+
+[code]
+remove_column :posts, ;slug, :string, null: false, default: '', index: true
+[/code]
+
+If you're going to need to use any other methods, you should use reversible or write the up and down methods instead of using the change medthod.
+
+若需要使用其他方法，應該使用reversible或是寫up and down方法取代change方法。
+
+
+
+3.9 Using reversible
+
+Complex migrations may require processing that Active Record doesn't know how to reverse. You can use reversible to specify what to do when running a migration and what else to do when reverting it. For example: 
+
+[code]
+class ExampleMigration < ActiveRecord::Migration[5.0]
+  def change
+    create_table :distributors do |t|
+      t.string :zipcode
+    end
+    
+    reversible do |dir|
+      dir.up do
+        # add a CHECK constraint
+        execute <<-SQL
+          ALTER TABLE distributors
+            ADD CONSTRAINT zipchk
+              CHECK (char_length(zipcode) = 5) NO INHERIT;
+        SQL
+      END
+      dir.down do
+        execute <<-SQL
+          ALTER TABLE distributors
+            DROP CONSTRAINT zipchk
+        SQL
+      end
+    end
+
+    add_column :users, :home_page_url, :string
+    rename_column :users, :email, :email_address
+  end
+end
+[/code]
+
+Using reversible will ensure that the instructions are executed in the right order too. If the previous example migration is reverted, the down block will be run after the home_page_url column is removed and right before the table distributors is dropped.
+
+使用reversible將確保指定被正確執行。若前例的migration被恢復，down區塊會在home_page_url欄位被移除且distributor table移除後執行。
+
+Someitime your migration will do someting which is just plain irreversible; for example, it might destroy some data. In such cases, you can raise ActiveRecord::IrreversibleMigration in your down block. If someone tries to revert your migration, an error message will be displayed saying that it can't be down
+
+有些時候，migration的行為是完全不可逆的，舉例還說，可能會破壞資料。這時，可以在down block使用ActiveRecord::IrreversibleMigration。若有人試圖反轉migration，則會顯示錯誤訊息：無法被down。
+
+
+
+3.10 Using the up/down Methods
+
+You can also use the old style of migration using up and down methods instead of the change medthod. The up method should describe the transformation you'd like to make to your schema, and the down method of your migration should revert the transformations done by the up method. In other words, the database schema should be unchanged if you do an up followed by a down. For example, if you create a table in the up method, you should drop it in the down method. It is wise to perform the transformations in precisely the reverse order they were made in the up method. The example in the reversible section is qeuivalent to :
+
+風格的migration使用up and down方法取代change方法。up方法描述想要對schema做的轉化，down方法是恢復migration的由up方法處理的轉化。換句話說，資料庫圖表是無法變更的，除非進行up接著down。例如，用up方法建立table，drop就該用down方法。精確地處理轉化才是明智之舉。
+
+[code]
+class ExampleMigration < ActiveRecord::Migration[5.0]
+  def up
+    craete_table :distributors do |t|
+      t.string :zipcode
+    end
+
+    # add a CHECK constraint
+    execute <<-SQL
+      ALTER TABLE distributors
+        ADD CONSTRAINT zipchk
+        CHECK (char_length(zipcode) = 5);
+      SQL
+
+      add_column :users, :home_page_url, :string
+      rename_column :users, :email, :email_address
+    end
+
+  def down
+    rename_column :users, :email_address, :emaol
+    remove_column :users, :home_page_url
+
+    execute <<-SQL
+      ALTER TABLE distributors
+      DROP CONSTRAINT zipchk
+    SQL
+
+    drop_table :distribotors
+  end
+end
+[/code]
+
+If your migration is irreversible, you should raise ActiveRecord::IrreversibleMigration from your down method. If someone tries to revert your migration, an error message will be displayed saying that it can't be done.
+
+Migration若是不可逆，在down方法該用ActiveRecord::IrreversibleMigration。若有人試圖反轉migration，會出現錯誤提示。
+
+
+
+3.11 Reverting Previous Migrations
+
+You can use Active Record's ability to rollback migrations using the revert method：
+
+使用Activr Record的revert方法來rollback遷移：
+
+[code]
+require_relative '2012121212456_example_migration'
+
+class FixupExampleMigration < ActiveRecord::Migration[5.0]
+  def change
+    revert ExampleMigration
+
+    create_table(:apples) do |t|
+      t.string :variety
+    end
+  end
+end
+[/code]
+
+The revert method also accepts a block of instructions to reverse. This could be useful to revert selected parts of previous migrations. For exmaple, let's imagine that ExampleMigrations is committed and it is later decided it would be best to use Active Record validations, in place of the CHECK constraint, to verify the zipcode.
+
+Revert方法能接受區塊裡的reverse。對於revert部分的migration來說很實用。例如ExampleMigration已經完成遷移，又想要用Active Record的驗證來取代CHECK約束，以對郵遞區號進行驗證。
+
+[code]
+class DontUseConstraintForZipcodeValidationMigration < ActiveRecord::Migration
+  def change
+    revert do 
+      reversible do |dir|
+        dir.up do
+          execute <<-SQL
+            ALTER TABLE distributors
+              ADD CONSTRAINT zipchk
+                CHECK (char_length(zipcode) = 5);
+          SQL
+        end
+
+      dir.down do
+        execute <<-SQL
+          ALTER TABLE distributors
+            DROP CONSTRINT zipchk
+          SQL
+        end
+      end
+    end
+  end
+end
+[/code]
+
+The same migration could also have been written without using revert but this would have involved a few more steps: reversing the order of create_table and reversible, replacing create_table by drop_table, and finally replacing up by down and vice-versa. This is all taken care of by revert.
+
+同樣的遷移可以在不使用revert時被寫入，原本需要幾個步驟：對換create_table與reversible，由drop_table取代create_teable，最後由down取代up，反之亦然。這就是revert所做的事。
+
+
+
+4 Runnig Migrations 
+
+Rails provides a set of bin/rails tasks to run certain sets of migrations.
+
+Rails提供bin/rails組合的任務來執行某些migrations。
+
+
+The very first migration related bin/rails task you will use will probably be rails db:migration. In its most basic form it just runs the change or up method for all the migrations that have not yet been run. If there are no such migrations, it exits. It will run these migrations in order based on the date of the migration.
+
+第一個migration關聯到bin/rails task，應該會是rails db:migration。這個很基礎的任務形式執行所有migration中尚未執行的change或up方法。如果執行完了即離開。他會依照時間順序執行遷移。
+
+
+Note that running the db:migration task also invokes the db:schema:dump task, which will update your db/schema.rb file to match the structure of your database.
+
+在執行db:migration時也會進行db:schema:dump，這更新schema.rb來符合資料庫結構。
+
+
+If you specify a target version, Active Record will run the required migrations (change, up, down) until it has reached the specified version. The version is the numerical prefix on the migration's filename. For example, to migrate to version 20080906120000 run: 
+
+若指定版本，Active Record會執行所需的migrations(change, up, down)，直至指定版本。版本是migration檔名是數字綴詞。例如遷移版本至200809061200：
+
+[code]
+$ bin/rails db:migration VERSION=20080906120000
+[/code]
+
+
+If version 200809061200 is greater than the current version (i.e., it is migrating upwards), this will run the change (or up) method on all migrations up to and including 20080906120000, and will not execute any later migrations. If migrating including downwards, this will run the down method on all the migrations down to, but not including, 20080906120000.
+
+如果200809061200大於現行版本，會執行change或是up方法，直到20080906120000(包含本身)，並不會執行其後的遷移。若遷移包括向下，則會執行down方法，但不包含20080906120000。
+
+
+
+4.1 Rolling Back
+
+A common task is to rollback the last migration. For example, if you made a mistake in it and wish to correct it. Rather than tracking down the version number associated with the previous migration you can run:
+
+常見的是rollback到前一個遷移，例如失誤了並想要校正，不如追溯與之關聯的前一版本號：
+
+[code]
+$bin/rails db:rollback
+[/code]
+
+
+This will rollback the lastest migration, either by reverting the change method or by running the down method. If you need to undo several migrations you can provide a STEP parameter:
+
+透過恢復change方法或執行down方法，可以回到前一個遷移若需要恢復多個遷移之前，可以使用STEP：
+
+[code]
+$ bin/rails db:roolback STEP=3
+[/code]
+
+will revert the last 3 migrations. 
+
+將回復到倒數第三個遷移。
+
+
+The db:migration:redo task is a shortcut for doing a rollback and then migration back up again. As with the db:rollback task, you can use the STEP parameter if you need to go more than one version back, for example:
+
+db:migration:redo可以rollback並再進行遷移。使用db:rollback同時，還可以加上STEP參數來回到數個migration以前：
+
+[code]
+bin/rails db:migration:redo STEP=3
+[/code]
+
+
+Neither of these bin/rails tasks do anything you could not do with db:migrate. They are simply more convenient, since you do not need to explicitly specify the version to migrate to.
+
+沒有db:migration做不到的，他們很方便使用，不用精準的指定版本來遷移。
+
+
+
+4.2 Set up the Datebase
+
+The rails db:setup task will create the databsase, load the schema and initialize it with the seed data.
+
+rails db:setup可以建立資料庫並讀取schema並帶上seed來初始化。
+
+
+
+4.2 Reseting the Database
+
+The rails db:reset task will drop the database and set it up again. This is functionally equivalent to rails db:drop db:setup.
+
+rails db:reset會drop弔資料庫並重設，相當於rails db:drop db:setup.
+
+
+Note:
+This is not the same as running all the migrations. It will only use the contents of the current db:schema.rb or db/structure.sql file. If a migration can't be rolled back, rails db:reset may not help you.
+
+這不同於執行所有遷移。只用了現行的db:schema.rb或是db/structure.sql。若無法被rollback，那麼rails db:reset也沒有用。
+
+
+
+4.4 Running Specigic Migrations
+
+If you need to run a specific migration up or down, the db:migration:up and db:migration:down tasks will do that. Just specify the appropriate version and the corresponding migration will have its change, up or down method inovked, for example:
+
+要是執行指定的migration up or down，db:migration:up和db:migration:down會去執行。指定合適版本則相對應的遷移會做change, up 或 down方法
+
+[code]
+$ bin/rails db:migration:up VERISON=20080906120000
+[/code]
+
+
+
+4.5 Running Migrations in Different Enviroments
+
+By default running bin/rails db:migrate will run in the development enviroment. To run migrations against another enviroment you can specify it using the RAILS_ENV enviroment variable while running the command. For example to run migrations against the test enviroment you could run:
+
+預設rails db:migratey在開發環境下執行。要在其他環境執行可以指定RAILS_ENV此環境變數。
+
+[code]
+$ bin/rails db:migratte RAILS_ENV=test
+[/code]
+
+
+
+4.6 Changing the Output of Running Migrations
+
+By default migrations tell you exactly what they're doing and how long it took. A migration creating a table and adding an index might produce output like this
+
+
+[code]
+== CreateProducts: migrating
+==============================
+-- create_table(:products)
+   -> 0.028s
+== CreateProducts: migrated (0.028s)
+=============================
+
+Several method are provide
 
 
 
