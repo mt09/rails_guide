@@ -651,7 +651,7 @@ Someitime your migration will do someting which is just plain irreversible; for 
 
 You can also use the old style of migration using up and down methods instead of the change medthod. The up method should describe the transformation you'd like to make to your schema, and the down method of your migration should revert the transformations done by the up method. In other words, the database schema should be unchanged if you do an up followed by a down. For example, if you create a table in the up method, you should drop it in the down method. It is wise to perform the transformations in precisely the reverse order they were made in the up method. The example in the reversible section is qeuivalent to :
 
-風格的migration使用up and down方法取代change方法。up方法描述想要對schema做的轉化，down方法是恢復migration的由up方法處理的轉化。換句話說，資料庫圖表是無法變更的，除非進行up接著down。例如，用up方法建立table，drop就該用down方法。精確地處理轉化才是明智之舉。
+舊風格的migration使用up and down方法取代change方法。up方法描述想要對schema做的轉化，down方法是恢復migration的由up方法處理的轉化。換句話說，資料庫圖表是無法變更的，除非進行up接著down。例如，用up方法建立table，drop就該用down方法。精確地處理轉化才是明智之舉。
 
 [code]
 class ExampleMigration < ActiveRecord::Migration[5.0]
@@ -935,7 +935,108 @@ generates the followng output
 
 If you want Active Record to not output anything, the running rails db:migrate VERBOSE=false will suppress all output.
 
+若要Active Record不做任何輸出，執行db:migrate VERBOSE=false則會禁止所有輸出。
 
+
+
+5 Changing Existing Migrations
+
+Occasionally you will make a mistake when writing a migration. If you have already run the migration, then you cannot just edit the migration and run the migration again: Rails thinks it has already run the migration and so will do nothing when you run rails db:migrate. You mnust rollback the migration, edit your migration and then run rails db:migrate to run the corrected version.
+
+寫遷移時偶有錯誤，若已經執行過遷移則無法編輯或是再次執行，Rails認為已經執行所以不再做一次遷移，必須rollback、編輯，執行遷移來校正版本。
+
+
+In general, editing existing migrations is not a good idea. You will be creating extra work for yourself and your co-works and cause major headaches if the existing version of the migration has already been run on prodution machines. Instead, you should write a new migration that performs the changes you requires. Editing a freshly generated migration that has not yet been committed to source control(or, more generally, which has not been propagated beyond your development machine) is relatively harmless.
+
+一般來說，編輯現存的遷移不是好主意，若說遷移已經處上線狀態，這會讓你和同事額外生工，取而代之的方法是寫一段新遷移來達到需求。一個新生成的、尚未提交的遷移，是相對無害的。
+
+
+The revert method can be helpful when writing a new migration to undo previous migrations in whole or in part.
+
+不論大小範圍，寫新的遷移以恢復過往的遷移，revert方法可以幫上很多忙，
+
+
+
+6 Schema Dumping and You
+
+Migrations, mighty as they may be, are not the authoritative source for your database schema. That role falls to either db/schema.rb or an SQL file which Active Record generates by examining the database. They are not designed to be edited, they just represent the current state of the database.
+
+遷移很強大，對資料庫圖表來說是不足夠的。檢視資料的責任落在Active Record產生的db/schema.rb或SQL，他們皆被設計為不可編輯，只呈現當下的資料庫狀態。
+
+
+There is no need (and it is error prone) to deploy a new instance of an app by replaying the entire migration history. It is much simpler and faster to just load into the database a description of the current schema.
+
+不需重新跑過所有遷移以部署新的應用程式，更簡易且快的做法是由當前圖表的結構載入資料庫。
+
+
+For example, this is how the test database is created: the current development database is dumped (either to db/schema.rb or db/structure.sql) and then loaded into the test database.
+
+test database如此產生：現行development database被dump(db/schema.rb或db/sturture.sql)，然後讀入test database。
+
+
+Schema files are also useful if you want a quick look at what attributes an Active Record object has. This infomation is not in the model's code and is frequently spread across several migrations, but the infomation is nicely summend up in the schema file. The annotate models gem automatically adds and updates comments at the top of each model summarizing the schema if you desire that functionally.
+
+欲快速檢視Active Record物件屬性就依靠schema了。shcema的內容並不寫在model裡，並經常性地擴佈到多個遷移，最後會的加總到shcema檔案。Annotate models這個gem會自動新增與更新註解在每個model最上方。
+
+
+
+6.2 Types of Schema Dumps
+
+There are two ways to dump the schema. This is set in config/application.rb by the config.active_record.schema_format setting, which may be either :sql or :ruby.
+
+dump shcema有兩種方式，在config/application.rb裡透過config.active_record.schema_format設定，可以是:sql或:ruby。
+
+If :ruby is selected, then the schema is stored in db/schema.rb. If you look at this file you'll find that it looks an awful lot like one very big migration:
+
+若選了:rubuy，schema會存入db.schema.rb，你會發現這是非常大個遷移：
+
+[code]
+Active Record::Schema.define(version: 20171221110146) do
+    create_table "authors", force: ture do |t|
+        t.string "name"
+        t.datetime "created_at"
+        t.datetime "updated_at"
+    end
+
+    create_table "products", force: true do |t|
+        t.string "name"
+        t.text "description"
+        t.datetime "created_at"
+        t.datetime "updated_at"
+        t.string "part_number"
+    end
+end
+[/code]
+
+
+In many ways this is exactly what it is. This file is created by inspectioin the database and expressing its structure using create_table, add_index and so on. Because this is database-independent, it could be loaded into any database that Active Record supports. This could be very useful if you were to distribute an application that is able to run against multiple databases.
+
+許多狀況下便是如此。使用create_table、add_index之類的方法來建立schema，以檢視資料庫並表示出他自身結構。獨立資料庫，可以載入任何Active Record支援的資料庫，若要應用程式來執行多種資料庫，這會很有幫助。
+
+
+This is however a trade-off: db/schema.rb cannot express database specific items such as triggers, stored procedures or check constraints. While in a migration you can execute custom SQL statements, the schema dumper cannot reconstitute those statements from the database. If you are using features like this, then you should set the schema format to :sql.
+
+db/schema.rb不能表示資料庫特殊功能，如：觸發器，儲存過程或是確認約束。在遷移裡可以執行自訂SQL語法，schema dumper不能由資料庫重組這些語法。若需要如此進行，要將schema格式設置為:sql。
+
+
+Instead of using Active Record's schema dumper, the database's structure will be dumped using a tool specific to the database (via the db:structure:dump rails task) into db/structure.sql. For example, for PostgreSQL, the pg_dump utility is used. For MySQL and MariaDB, this file will contain the output of SHOW CREATE TABLE for the various tables.
+
+取代Active Record的schema dumper，用工具dump到指定資料庫到db/structure.sql(由db:structure:dump rails任務進行)。例如PostgreSQL使用pg_dump，MySQL與MariaDB則包含了SHOW CREATE TABLE來呈現表格。
+
+
+Loading these schemas is simply a question of executing the SQL statements they contain. By definition, this will create a perfect copy of the database's strucute. Using the :sql schema format will, however, prevent loading the schema into a RDBMS other than the one used to create it.
+
+讀取這些schema僅是執行SQL語法。就定義而言，正是資料庫結構的完美複本。使用:sql schema格式，防止圖表載入到自身以外的RDBMS。
+
+
+
+6.3 Schema Dumps and Source Control
+
+Because schema dumps are the authoritative source for your database schema, it is strongly recommended that you check them into source control.
+
+db/schema.rb contains the current version number of the database. This ensures conflicts are going to happen in the case of a merge where both branches touched the schema. When that happens, solve conflicts manually, keeping the highest version number of the two.
+
+schema dump對資料庫圖表來說是命令式的來源，強烈建議將他們加入版本控制。
 
 
 
@@ -943,7 +1044,54 @@ If you want Active Record to not output anything, the running rails db:migrate V
 
 The Active Record way claims that intelligence belongs in your models, not in the database. As such, features such as triggers or constraints, which push some of that intelligence back into the database, are not heavily used.
 
-Active Record非常要求在model的理解能力，而不是在資料庫。因此，如觸發或是限制，在資料庫的運算不常使用。
+Active Record非常要求在model的理解能力，而不是在資料庫。因此觸發或是限制，在資料庫的運算不常使用。
 
 referential 指示的 做為參考的
 integrity 完整
+
+
+Validations such as validates :foreign_key, uniqueness: true are one way in which models can enforce data integrity. The :dependent option on associations allows models to automatically destroy child objects when the parent is destroyed. Like anything which oprates at the application level, these cannot guarantee refential integrity and so some people augment them with foreign key constraints in the database.
+
+validates :foreign_key與uniqueness: true能夠令model強制使資料完善。:dependent可使父層在刪除時連帶將子層一並處理掉。在應用程式層面的任何運行，無法保證參照的完整性，所以有人在資料庫裡對他們加入foreign key約束。
+
+
+Although Active Record does not provide all the tools for working directly with such features, the execute method can be used to execute arbitrary SQL.
+
+儘管Active Record不提供工具來直接處理這些需求，execute方法可以執行任何SQL語法。
+
+
+
+8 Migrations and Seed Data
+
+The main purose of Rails' migration feature is to issue commands that modify the schema using a consistent process. Migrations can also be used to add or modify data. This is useful in an existing database that can't be destroyed and recreated, such as a production database.
+
+Rails的遷移主要是針對需求去修改圖表。遷移亦可用於新增或修改資料。這對已存在且無法刪除或是重新產生的資料庫相當有幫助。
+
+
+[code]
+class AddInitialProducts < ActiveRecord::Migration
+  def up
+    5.times do |i|
+      Product.create(name: "Product ##{i}", description: "A product.")
+    end
+  end
+
+  def down
+    Product.delete_all
+  end
+end
+[/code]
+
+
+To add initial data after a database is created, Rails has a built-in 'seeds' feature that makes the process quick and easy. This is especially useful when reloading the database frequently in development and test environments. It's easy to get started with this feature: just fill up db/seed.rb with some Ruby code, and run rails db:seed:
+
+在database建立後新增初始資料，透過Rails內建的"seeds"功能更簡易且快速，特別對於讀取頻繁的開發與測試環境而言特別好用。只要寫在db.seed.rb後執行rails db:seed即可。
+
+
+[code]
+5.times do |i/\
+  Product.create(name: "Product ##{i}", description: "A product.")
+end
+[/code]
+
+
