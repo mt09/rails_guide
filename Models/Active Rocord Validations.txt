@@ -125,20 +125,46 @@ The bang versions(eg. save!) raise an exception if the record is invalid. The no
 
 The following methods skip validations, and will save the object to the database regardless of its validity. They should be used with caution.
 
-下列方法不會
+下列方法略過驗證且在不知其正確性之下存入資料庫，請小心使用。
+
+· decrement!
+· decrement_counter
+· increment!
+· increment_counter
+· toggle!
+· touch
+· update_all
+· update_attribute
+· update_column
+· update_columns
+· update_counters
 
 
+Note that save also has the ability to skip validations if passed validate: false as an argument. This technique be used with caution.
+
+要是使用validate: false參數，save方法也會略過驗證，一樣服用時請多留意。
+
+· save(validate: false)
 
 
+1.4 valid? and invalid?
 
+Before saving an Active Record object, Rails runs your validations. If these validations produce any errors, Rails does not save the object.
 
+You can also run these validations on your own. valid? triggers your validations and returns true if no errors were found in the object, and false otherwise. As you saw above:
 
+儲存Active Record物件以前，Rails會執行驗證，若驗證出錯，Rails不會儲存出錯物件。
 
+valid?會觸發驗證並在沒有錯誤時回傳true，反之則回傳false。
 
+[code]
+class Person < ApplicationRecord
+  validates :name, presence: true
+end
 
-
-
-
+Person.create(name: "Tom Cruise").valid? # -> true
+Person.create(name: nil).valid? # => false
+[/code]
 
 
 
