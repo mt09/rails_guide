@@ -167,10 +167,84 @@ Person.create(name: nil).valid? # => false
 [/code]
 
 
+After Active Record has performed validations, any errors found can be accessed through the errors.messages instance method, which returns a collection of errors. By definition, an object is valid if this collection is empty after running validations.
+
+在Active Record進行驗證後，任何錯誤都可以透過error.message這實例方法找到，它會回傳錯誤集合。依定義來看，單一合法物件是為驗證後錯誤為空集合。
 
 
+Note that an object instantiated with new will not report errors even if it's technically invalid, because validations are automatically run only when the object is saved, such as with the create or save methods.
+
+一物件實例化後，new方法將不會告知錯誤訊息，即便這是技術上的錯誤，因為驗證只會在物件被存入時自動執行，就如create或save方法。
+
+[code]
+class Person < ApplicationRecord
+  validates :name, presence: true
+end
+
+>> p = Person.new
+# => #<Person id: nil, name: nil>
+>> p.errors.messages
+# => {}
+
+>> p.valid?
+# => false
+>> p.errors.messages
+# => {name:["can't be blank"]}
+
+>> p = Person.create
+# => #<Person id: nil, name: nil>
+>> p.errors.messages
+# => {name:["can't be blank"]}
+
+>> p.save
+# => false
+
+>> p.save!
+# => ActiveRecord:RecordInvalid: Validation failed: Name can't be blank
+
+>> Person.create!
+# => ActiveRecord::RecordInvalid: Validation failed: Name can't be blank
+[/code]
 
 
+invalid? is simply the inverse of valid?. It triggers your validations, returning true if any errors were found in the object, and false otherwise.
+
+invalid? 純粹是valid? 的相反，驗證物件有錯誤時回傳true，反之是false。
 
 
+1.5 errors[]
 
+To verify whether or not a particular attribute of an object is valid, you can use errors[:attribute]. It returns an array of all the errors for :attribute. If there are no errors on the specified attribute, an empty array is returned.
+
+This method is only useful after validations have been run, because it only inspects the errors collection and does not trigger validations itself. It's different from the ActiveRecord::Base#invalid? method explained above because it doesn't verify the validity of the object as a whole. It only checks to see whether there are errors found on an individual attribute of the object.
+
+驗證物件屬性是否合格，可以用errors[:attribute]。他會回傳所有錯誤的陣列回:attribute。若指定的attribute沒有錯誤，陣列為空。
+
+該方法只用在驗證執行後，因為單檢查錯誤集合且不會觸發驗證。與ActiveRecord::Base#invalid?差異如前述，整體來說，他並不確認物件的合法性。單純確認是否在物件單一屬性有錯誤。
+
+
+[code]
+class Person < ApplicationRecord
+  validates :name, presence: true
+end
+
+>> Person.new.errors[:name].any? # => false
+>> Person.create.errors[:name].any? # => false
+[/code]
+
+
+1.6 errors.details
+
+To check which validations failed on an valid attribute, you can use errors.details[:attribute]. It returns an array of hashes with an :error key to get the symbol of the validator:
+
+對一合格屬性進行驗證錯誤的確認，使用errors.details[:attribute]，它會回傳hash陣列，裡頭的key與value為:error與經驗證的symbol。
+
+[code]
+class Person < ApplicationRecord
+  validates: name, presence: true
+end
+
+>> person = Person.new
+>> person.valid?
+>> person.errors.details[:name] # => [{error: :blank}]
+[/code]
