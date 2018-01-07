@@ -248,3 +248,30 @@ end
 >> person.valid?
 >> person.errors.details[:name] # => [{error: :blank}]
 [/code]
+
+
+
+2 Validation Helpers
+
+Active Record offers many pre-defined validation helpers that you can use directly inside your class definitions. These helpers provide common validation rules. Every time a validation falls, an error message is added to the object's errors collection, and this message is associated with the attribute being validated.
+
+Each helper accepts an arbitrary number of attribute names, so with a single line of code you can add the same kind of validation to several attributes.
+
+All ot them accept the :on and :message options, which define when the validation should be run and what message should be added to errors collection if it fall, respectively. The :on option takes one of the values :create or :update. There is a default error message for each one of the validation helpers. These messages are used when the :message option isn't specified. Let's take a look at each one of the available helpers.
+
+Active Record提供眾多預先定義的驗證helper，直接用在class中的定義。這些helper提供常用的驗證規則。每當驗證失敗，錯誤訊息會加到物件的錯誤集合之中，而這錯誤訊息關聯著經驗證的屬性。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
