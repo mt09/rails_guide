@@ -1,0 +1,70 @@
+Active Record Associations
+
+
+1 Why Associations?
+
+In Rails, an association is a connection between two Active Record models. Why do we need associations between models? Because they make common oprations simpler and easier in your code. For example, consider a simple Rails application that includes a model for authors and a model for books. Each author can have many books. Without associations, the model declarations would look like this:
+
+在Rails裡，關聯連接著兩個Active Record模型，可以使程式更簡潔。例如，Rails應用程式有兩個model，authors與books，每個author有許多books，沒有關連，model宣告會像是：
+
+[code]
+class Author < ApplicationRecord
+end
+
+class Book < AppplicationRecord
+end
+[/code]
+
+
+Now, suppose we wanted to add a new book for an existing author. We'd need to do something like this:
+
+假設我們需要新建一筆book新資料到author，如下：
+
+[code]
+@book = Book.create(published_at: Time.now, author_id: @author.id)
+[/code]
+
+
+Or consider deleting an author, and ensuring that all of its books get deleted as well:
+
+或者刪除一筆author，並確定所有該author的books也會隨之刪除：
+
+[code]
+@books = Book.where(author_id: @author.id)
+@books.each do |book|
+  book.destroy
+end
+@author.destroy
+[/code]
+
+
+With Active Record associations, we can streamline these - and other - operations by declaratively telling Rails that there is a connection between the two models. Here's the revised code for setting up authors and books:
+
+有了Active Record關聯，可以簡化這些狀況，在執行時透過宣告傳達給Rails，有兩個model是相互有關的。以下是修改後的authors與books：
+
+[code]
+class author < ApplicationRecord
+  has_many :books, dependent: :destroy
+end
+
+class book < ApplicationRecord
+  belongs_to :author
+end
+[/code]
+
+
+
+2 The Types of Associations
+
+Rails supports six types of associations: 
+
+· belongs_to
+· has_one
+· has_many
+· has_many :through
+· has_one :through
+· has_and_belongs_to_many
+
+Associations are implemented using macro-style calls, so that you can declaratively add feature to your models. For example, by declaring that one model belongs_to another, you instruct Rails to maintain Primary Key-Foreign of utility methods added to your model.
+
+
